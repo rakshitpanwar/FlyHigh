@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>FlyHigh</title>
+    
+    <!-- PWA / App-like Settings -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0f172a">
+    
+    <!-- App Icon (This uses a generic plane icon for the home screen) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Custom Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#151e2e',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        /* Grid Pattern Background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 5px; border: 2px solid #0f172a; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Range Input Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #38bdf8;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #334155;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-50 antialiased selection:bg-sky-500/30 selection:text-sky-200">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- Icons Components ---
+        const Icon = ({ path, size = 20, className = "" }) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                {path}
+            </svg>
+        );
+
+        const PlaneIcon = (props) => <Icon {...props} path={<path d="M22 2L2 8.66667L11.5556 12.4444M22 2L15.3333 22L11.5556 12.4444M22 2L11.5556 12.4444"/>} />;
+        const Calendar = (props) => <Icon {...props} path={<><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></>} />;
+        const Clock = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>} />;
+        const MapPin = (props) => <Icon {...props} path={<><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></>} />;
+        const Tag = (props) => <Icon {...props} path={<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>} />;
+        const Briefcase = (props) => <Icon {...props} path={<><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></>} />;
+        const ChevronRight = (props) => <Icon {...props} path={<polyline points="9 18 15 12 9 6"/>} />;
+        const CheckCircle = (props) => <Icon {...props} path={<><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>} />;
+        const TrendingUp = (props) => <Icon {...props} path={<><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></>} />;
+        const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></>} />;
+        const ArrowRight = (props) => <Icon {...props} path={<><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>} />;
+
+        // --- Constants ---
+        const AIRLINES = [
+            { id: 'Vistara', label: 'Vistara', basePrice: 5000 },
+            { id: 'Air_India', label: 'Air India', basePrice: 4500 },
+            { id: 'Indigo', label: 'Indigo', basePrice: 3500 },
+            { id: 'GO_FIRST', label: 'GO FIRST', basePrice: 3200 },
+            { id: 'AirAsia', label: 'AirAsia', basePrice: 3000 },
+            { id: 'SpiceJet', label: 'SpiceJet', basePrice: 3100 },
+        ];
+
+        const CITIES = [
+            { id: 'Delhi', label: 'Delhi', factor: 1.1 },
+            { id: 'Mumbai', label: 'Mumbai', factor: 1.2 },
+            { id: 'Bangalore', label: 'Bangalore', factor: 1.15 },
+            { id: 'Kolkata', label: 'Kolkata', factor: 1.0 },
+            { id: 'Hyderabad', label: 'Hyderabad', factor: 1.05 },
+            { id: 'Chennai', label: 'Chennai', factor: 1.05 },
+        ];
+
+        const TIMES = [
+            { id: 'Early_Morning', label: 'Early Morning', factor: 0.9 },
+            { id: 'Morning', label: 'Morning', factor: 1.1 },
+            { id: 'Afternoon', label: 'Afternoon', factor: 1.0 },
+            { id: 'Evening', label: 'Evening', factor: 1.15 },
+            { id: 'Night', label: 'Night', factor: 0.95 },
+            { id: 'Late_Night', label: 'Late Night', factor: 0.85 },
+        ];
+
+        const STOPS = [
+            { id: 'zero', label: 'Non-stop', cost: 0 },
+            { id: 'one', label: '1 Stop', cost: 1500 },
+            { id: 'two_or_more', label: '2+ Stops', cost: 2800 },
+        ];
+
+        const CLASSES = [
+            { id: 'Economy', label: 'Economy', multiplier: 1 },
+            { id: 'Business', label: 'Business', multiplier: 3.5 },
+        ];
+
+        // --- App Component ---
+        function App() {
+            const [formData, setFormData] = useState({
+                airline: 'Vistara',
+                source_city: 'Delhi',
+                destination_city: 'Mumbai',
+                departure_time: 'Morning',
+                arrival_time: 'Evening',
+                stops: 'one',
+                class_type: 'Economy',
+                duration: 2.5,
+                days_left: 20,
+            });
+
+            const [predictedPrice, setPredictedPrice] = useState(null);
+            const [isAnimating, setIsAnimating] = useState(false);
+
+            const handleChange = (field, value) => {
+                setFormData(prev => ({ ...prev, [field]: value }));
+            };
+
+            const calculatePrice = () => {
+                setIsAnimating(true);
+                setTimeout(() => {
+                    const airline = AIRLINES.find(a => a.id === formData.airline);
+                    const source = CITIES.find(c => c.id === formData.source_city);
+                    const dest = CITIES.find(c => c.id === formData.destination_city);
+                    const depTime = TIMES.find(t => t.id === formData.departure_time);
+                    const stop = STOPS.find(s => s.id === formData.stops);
+                    const cls = CLASSES.find(c => c.id === formData.class_type);
+                    
+                    let price = airline.basePrice;
+                    price = price * ((source.factor + dest.factor) / 2);
+                    price += formData.duration * 400; 
+                    price += stop.cost;
+                    price = price * depTime.factor;
+                    const daysFactor = 1 + (50 - formData.days_left) / 25; 
+                    price = price * daysFactor;
+                    price = price * cls.multiplier;
+                    const noise = (Math.random() * 400) - 200; 
+                    
+                    setPredictedPrice(Math.round(price + noise));
+                    setIsAnimating(false);
+                }, 800);
+            };
+
+            return (
+                <div className="relative min-h-screen overflow-hidden flex flex-col">
+                    
+                    {/* Background Effects */}
+                    <div className="fixed inset-0 bg-slate-900 z-0">
+                        <div className="absolute inset-0 bg-grid opacity-20"></div>
+                        <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/20 rounded-full blur-[100px] animate-blob"></div>
+                        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full blur-[100px] animate-blob animation-delay-2000"></div>
+                    </div>
+
+                    {/* Header */}
+                    <header className="relative z-50 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md">
+                        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3 group cursor-pointer">
+                                <div className="bg-gradient-to-tr from-sky-400 to-indigo-500 p-2.5 rounded-xl shadow-lg shadow-sky-500/20 group-hover:scale-110 transition-transform duration-300">
+                                    <PlaneIcon size={24} className="text-white transform rotate-0" />
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-sky-100 to-indigo-100 tracking-tight">FlyHigh</h1>
+                                </div>
+                            </div>
+                            <div className="hidden md:flex gap-6 text-sm font-medium text-slate-400">
+                            </div>
+                        </div>
+                    </header>
+
+                    {/* Main Content */}
+                    <main className="relative z-10 flex-grow max-w-7xl mx-auto px-6 py-8 w-full">
+                        
+                        {/* Hero Text */}
+                        <div className="text-center max-w-3xl mx-auto mb-10 space-y-4">
+                            <h2 className="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
+                                Flight Price <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-400">AI</span>
+                            </h2>
+                        </div>
+
+                        <div className="grid xl:grid-cols-12 gap-8 xl:gap-16 items-start">
+                        
+                            {/* Left Column: Dark Glassmorphism Form */}
+                            <div className="xl:col-span-7 space-y-8">
+                                <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl relative overflow-hidden group">
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-6 border-b border-slate-700/50 pb-4">
+                                            <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
+                                                <Briefcase className="text-sky-400" size={20} />
+                                            </div>
+                                            <h2 className="text-lg font-bold text-slate-200">Trip Details</h2>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Airline */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Airline</label>
+                                                <div className="relative group/input">
+                                                    <select 
+                                                        value={formData.airline}
+                                                        onChange={(e) => handleChange('airline', e.target.value)}
+                                                        className="w-full appearance-none bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all hover:border-slate-600"
+                                                    >
+                                                        {AIRLINES.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                                                    </select>
+                                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500">
+                                                        <ChevronRight size={16} className="rotate-90"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Travel Class */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Class</label>
+                                                <div className="flex bg-slate-900 p-1.5 rounded-xl border border-slate-700">
+                                                    {CLASSES.map(cls => (
+                                                        <button
+                                                            key={cls.id}
+                                                            onClick={() => handleChange('class_type', cls.id)}
+                                                            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 ${
+                                                                formData.class_type === cls.id 
+                                                                    ? 'bg-slate-700 text-sky-400 shadow-lg shadow-black/20' 
+                                                                    : 'text-slate-500 hover:text-slate-300'
+                                                            }`}
+                                                        >
+                                                            {cls.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Source */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                                    <MapPin size={14} className="text-sky-500"/> Origin
+                                                </label>
+                                                <div className="relative group/input">
+                                                    <select 
+                                                        value={formData.source_city}
+                                                        onChange={(e) => handleChange('source_city', e.target.value)}
+                                                        className="w-full appearance-none bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all hover:border-slate-600"
+                                                    >
+                                                        {CITIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            {/* Destination */}
+                                            <div className="space-y-2">
+                                                <label className="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                                    <MapPin size={14} className="text-indigo-500"/> Destination
+                                                </label>
+                                                <div className="relative group/input">
+                                                    <select 
+                                                        value={formData.destination_city}
+                                                        onChange={(e) => handleChange('destination_city', e.target.value)}
+                                                        className="w-full appearance-none bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all hover:border-slate-600"
+                                                    >
+                                                        {CITIES.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+                                    <div className="flex items-center gap-3 mb-6 border-b border-slate-700/50 pb-4">
+                                        <div className="p-2 bg-slate-800 rounded-lg border border-slate-700">
+                                            <Clock className="text-indigo-400" size={20} />
+                                        </div>
+                                        <h2 className="text-lg font-bold text-slate-200">Logistics</h2>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Departure</label>
+                                            <select 
+                                                value={formData.departure_time}
+                                                onChange={(e) => handleChange('departure_time', e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                                {TIMES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Arrival</label>
+                                            <select 
+                                                value={formData.arrival_time}
+                                                onChange={(e) => handleChange('arrival_time', e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                                {TIMES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">Stops</label>
+                                            <select 
+                                                value={formData.stops}
+                                                onChange={(e) => handleChange('stops', e.target.value)}
+                                                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            >
+                                                {STOPS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+                                            </select>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-medium text-slate-300">Duration</label>
+                                                <span className="text-xs font-mono text-sky-400 bg-sky-900/30 border border-sky-500/30 px-2 py-1 rounded">{formData.duration} hrs</span>
+                                            </div>
+                                            <input 
+                                                type="range" min="1" max="24" step="0.5"
+                                                value={formData.duration}
+                                                onChange={(e) => handleChange('duration', parseFloat(e.target.value))}
+                                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                        </div>
+
+                                        <div className="md:col-span-2 space-y-4">
+                                            <div className="flex justify-between items-center">
+                                                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                                                    <Calendar size={14} className="text-slate-500"/> Days Out
+                                                </label>
+                                                <span className={`text-xs font-mono px-2 py-1 rounded border ${formData.days_left < 7 ? 'text-rose-400 bg-rose-900/30 border-rose-500/30' : 'text-emerald-400 bg-emerald-900/30 border-emerald-500/30'}`}>
+                                                    {formData.days_left} Days
+                                                </span>
+                                            </div>
+                                            <input 
+                                                type="range" min="1" max="50" step="1"
+                                                value={formData.days_left}
+                                                onChange={(e) => handleChange('days_left', parseInt(e.target.value))}
+                                                className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button 
+                                    onClick={calculatePrice}
+                                    className="w-full py-5 bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold rounded-2xl shadow-lg shadow-sky-500/25 active:scale-[0.99] transition-all flex items-center justify-center gap-3 text-lg tracking-wide border-t border-white/10"
+                                >
+                                    {isAnimating ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Calculating...
+                                        </>
+                                    ) : (
+                                        <>
+                                            Predict Price <ArrowRight size={20} />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Right Column: Sticky Result Card */}
+                            <div className="xl:col-span-5 relative">
+                                <div className={`sticky top-8 transition-all duration-700 ease-out ${predictedPrice ? 'opacity-100 translate-y-0' : 'opacity-60 translate-y-8 blur-sm'}`}>
+                                    
+                                    <div className="bg-slate-800 border border-slate-700 rounded-[2rem] shadow-2xl overflow-hidden relative group">
+                                        
+                                        {/* Gradient Header */}
+                                        <div className="absolute top-0 inset-x-0 h-48 bg-gradient-to-b from-sky-600/20 to-transparent pointer-events-none"></div>
+                                        
+                                        <div className="p-8 relative z-10">
+                                            <div className="flex justify-between items-start mb-10">
+                                                <div>
+                                                    <h3 className="text-slate-400 font-medium text-sm uppercase tracking-widest mb-2">Total Estimate</h3>
+                                                    <div className="flex items-baseline gap-2">
+                                                        {isAnimating ? (
+                                                            <div className="h-16 w-48 bg-slate-700 animate-pulse rounded-lg"></div>
+                                                        ) : (
+                                                            <>
+                                                                <span className="text-6xl font-bold tracking-tighter text-white">
+                                                                    ₹{predictedPrice ? predictedPrice.toLocaleString() : '0,000'}
+                                                                </span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="bg-slate-900/80 p-3 rounded-2xl border border-slate-700 shadow-xl">
+                                                    <PlaneIcon size={32} className="text-sky-400" />
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                                                    <span className="text-slate-400 flex items-center gap-3 text-sm"><Tag size={16}/> Carrier</span>
+                                                    <span className="font-semibold text-slate-200">{AIRLINES.find(a => a.id === formData.airline)?.label}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                                                    <span className="text-slate-400 flex items-center gap-3 text-sm"><CheckCircle size={16}/> Cabin Class</span>
+                                                    <span className="font-semibold text-slate-200">{formData.class_type}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                                                    <span className="text-slate-400 flex items-center gap-3 text-sm"><TrendingUp size={16}/> Demand</span>
+                                                    <span className="font-semibold flex items-center gap-2">
+                                                        {formData.days_left < 10 ? 
+                                                            <><span className="w-2 h-2 rounded-full bg-rose-500"></span> <span className="text-rose-400">Surge Pricing</span></> : 
+                                                            <><span className="w-2 h-2 rounded-full bg-emerald-500"></span> <span className="text-emerald-400">Normal</span></>
+                                                        }
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {predictedPrice && (
+                                                <div className="mt-8 flex gap-4 items-start p-4 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-200 text-xs leading-relaxed">
+                                                    <AlertCircle size={20} className="shrink-0 mt-0.5 text-sky-400" />
+                                                    <p>AI Model Confidence: 87%. Prices fluctuate based on real-time API data availability. This is a simulated estimate based on historical trends.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="relative z-10 border-t border-slate-800 mt-12 bg-slate-900">
+                        <div className="max-w-7xl mx-auto px-6 py-6 text-center">
+                            <p className="text-slate-500 text-sm">© 2025 FlyHigh AI</p>
+                        </div>
+                    </footer>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
