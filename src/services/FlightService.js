@@ -45,7 +45,7 @@ export const searchFlights = (params) => {
                     stops: stop,
                     price: finalPrice,
                     duration: `${Math.floor(Math.random() * 3 + 2)}h ${Math.floor(Math.random() * 60)}m`,
-                    bookingLink: `https://www.google.com/search?q=flight+${airline.label}+${source.label}+to+${dest.label}`
+                    bookingLink: `https://www.google.com/travel/flights?q=Flights%20to%20${dest.label}%20from%20${source.label}%20on%20${params.date}`
                 });
             }
 

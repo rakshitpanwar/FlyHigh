@@ -7,12 +7,17 @@ import FlightResults from './pages/FlightResults';
 import Profile from './pages/Profile';
 import ProtectedRoute from './components/ProtectedRoute';
 
+import Landing from './pages/Landing';
+import PricePrediction from './pages/PricePrediction';
+
 function App() {
     return (
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Layout />}>
-                    <Route index element={<Home />} />
+                    <Route index element={<Landing />} />
+                    <Route path="book" element={<Home />} />
+                    <Route path="predict" element={<PricePrediction />} />
                     <Route path="login" element={<Auth />} />
                     <Route path="signup" element={<Auth />} />
                     <Route path="results" element={

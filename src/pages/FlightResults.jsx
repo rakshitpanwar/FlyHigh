@@ -3,6 +3,8 @@ import { useLocation, Link } from 'react-router-dom';
 import { searchFlights } from '../services/FlightService';
 import { PlaneIcon, Clock, ArrowRight, CheckCircle, AlertCircle } from '../components/Icons';
 
+import SkeletonCard from '../components/SkeletonCard';
+
 export default function FlightResults() {
     const location = useLocation();
     const searchParams = useMemo(() => location.state || {}, [location.state]);
@@ -27,23 +29,45 @@ export default function FlightResults() {
 
     if (loading) {
         return (
-            <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-                <div className="w-12 h-12 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
-                <p className="text-slate-500 dark:text-slate-400 font-medium animate-pulse">Searching best flights for you...</p>
+            <div className="max-w-5xl mx-auto px-6 py-8 space-y-4">
+                <div className="mb-8 flex items-center justify-between">
+                    <div className="space-y-2">
+                        <div className="h-8 w-48 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
+                        <div className="h-4 w-64 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse"></div>
+                    </div>
+                </div>
+                {[1, 2, 3].map((i) => (
+                    <SkeletonCard key={i} />
+                ))}
             </div>
         );
     }
 
     return (
         <div className="max-w-5xl mx-auto px-6 py-8">
-            <div className="mb-8 flex items-center justify-between">
-                <div>
-                    <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Flight Results</h2>
-                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-                        Found {flights.length} flights from {searchParams.source_city} to {searchParams.destination_city}
-                    </p>
+            {/* Header with Route Info */}
+            <div className="mb-8">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">
+                            <span>One Way</span>
+                            <span>•</span>
+                            <span>{flights.length} Results</span>
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white flex items-center gap-3">
+                            {searchParams.source_city} 
+                            <ArrowRight className="text-slate-300 dark:text-slate-600" size={24} /> 
+                            {searchParams.destination_city}
+                        </h2>
+                    </div>
+                    
+                    <Link 
+                        to="/book" 
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm"
+                    >
+                        Modify Search
+                    </Link>
                 </div>
-                <Link to="/" className="text-sky-500 hover:text-sky-600 font-medium text-sm">Modify Search</Link>
             </div>
 
             <div className="space-y-4">

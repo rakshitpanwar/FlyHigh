@@ -30,11 +30,20 @@ export default function Layout() {
                     </Link>
                     <div className="flex items-center gap-6">
                         <nav className="hidden md:flex gap-6 text-sm font-medium text-slate-600 dark:text-slate-400 items-center">
-                            <Link to="/" className="hover:text-sky-500 transition-colors">Home</Link>
+                            <Link to="/book" className="hover:text-sky-500 transition-colors">Book Flights</Link>
+                            <Link to="/predict" className="hover:text-indigo-500 transition-colors">AI Prediction</Link>
                             {user ? (
                                 <>
-                                    <Link to="/profile" className="hover:text-sky-500 transition-colors">Profile</Link>
-                                    <span className="text-slate-900 dark:text-slate-200 font-semibold">Hi, {user.name}</span>
+                                    <Link to="/profile" className="flex items-center gap-2 hover:text-sky-500 transition-colors">
+                                        {user.avatar ? (
+                                            <span className="text-xl">{user.avatar}</span>
+                                        ) : (
+                                            <span>Profile</span>
+                                        )}
+                                        <span className="text-slate-900 dark:text-slate-200 font-semibold">
+                                            {user.name}
+                                        </span>
+                                    </Link>
                                 </>
                             ) : (
                                 <Link to="/login" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-lg transition-colors">Login</Link>
